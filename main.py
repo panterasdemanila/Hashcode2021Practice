@@ -83,6 +83,27 @@ def save_output(output_path: str, solution: ProblemOutput):
         file.write(output_string_complete)
 
 
+def obtain_score_upper_bound(problem_definition: ProblemDefinition) -> int:
+    """
+    This is an auxiliary function that returns the upper bound on the score that can be obtained for a given problem
+    definition. There may not be a feasible solution that obtains this score, since this is only an upper bound.
+    :param problem_definition: Definition of the problem
+    :return: upper bound
+    """
+    pizzas_ingredients = sorted([len(i) for i, j in problem_definition.pizzas_configuration for _ in j], reverse=True)
+
+    return sum(
+        sum(pizzas_ingredients[4 * i:4 * (i + 1)]) ** 2 for i in range(problem_definition.teams_configuration[4])) \
+           + sum(sum(pizzas_ingredients[4 * problem_definition.teams_configuration[4] + 3 * i:
+                                        4 * problem_definition.teams_configuration[4] + 3 * (i + 1)]) ** 2 for i in
+                 range(problem_definition.teams_configuration[3])) \
+           + sum(sum(pizzas_ingredients[4 * problem_definition.teams_configuration[4]
+                                        + 3 * problem_definition.teams_configuration[3] + 2 * i:
+                                        4 * problem_definition.teams_configuration[4]
+                                        + 3 * problem_definition.teams_configuration[3] + 2 * (i + 1)]) ** 2 for i in
+                 range(problem_definition.teams_configuration[2]))
+
+
 def check_output_validity(problem_definition: ProblemDefinition, solution: ProblemOutput) -> bool:
     """
     Return true if the solution is valid
@@ -115,52 +136,85 @@ def check_output_score(problem_definition: ProblemDefinition, solution: ProblemO
 
 def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> ProblemOutput:
     """
-    Return an output for testing purposes
+    Return the output for a set of pizzas with many ingredients
     :param problem_definition:
     :return:
     """
-    pizzas_configurations = {[r for r in j][0]: i for i, j in problem_definition.pizzas_configuration}
+    # Better combination -> union_multiplier=3, intersection_multiplier=1 -> 706485235
+    return _generic_union_intersection_algorithm(problem_definition, union_multiplier=3, intersection_multiplier=1)
+
+
+def algorithm_little_bit_of_everything_union_intersection(problem_definition: ProblemDefinition) -> ProblemOutput:
+    """
+    Return the output for a set of pizzas with bit of everything
+    :param problem_definition:
+    :return:
+    """
+    # Better combination -> union_multiplier=2, intersection_multiplier=1 -> 10279
+    return _generic_union_intersection_algorithm(problem_definition, union_multiplier=2, intersection_multiplier=1)
+
+
+def algorithm_many_pizzas_union_intersection(problem_definition: ProblemDefinition) -> ProblemOutput:
+    """
+    Return the output for a set with many pizzas
+    :param problem_definition:
+    :return:
+    """
+    # Better combination -> union_multiplier=1, intersection_multiplier=0 -> 7827075
+    return _generic_union_intersection_algorithm(problem_definition, union_multiplier=1, intersection_multiplier=0)
+
+
+def algorithm_many_teams_union_intersection(problem_definition: ProblemDefinition) -> ProblemOutput:
+    """
+    Return the output for a set with many teams
+    :param problem_definition:
+    :return:
+    """
+    # Better combination -> union_multiplier=1, intersection_multiplier=0 -> 10279
+    return _generic_union_intersection_algorithm(problem_definition, union_multiplier=1, intersection_multiplier=0)
+
+
+def _generic_union_intersection_algorithm(problem_definition: ProblemDefinition, union_multiplier: int,
+                                          intersection_multiplier: int) -> ProblemOutput:
+    """
+    Return an output for the problem
+    :param problem_definition:
+    :return:
+    """
+    pizzas_configurations = {k: i for i, j in problem_definition.pizzas_configuration for k in j}
 
     delivered_pizzas: deque[Tuple[int, Set[int]]] = deque()
 
-    union_multiplier = 2
-    intersection_multiplier = 1
-
     # Obtain for four people
-    for i in range(problem_definition.teams_configuration[4]):
-        print(f"Team {i}/{problem_definition.teams_configuration[4]}")
-        # Obtain pizza with max ingredients
-        pizza_max_ingredients_id, pizza_max_ingredients_ingredients = max(pizzas_configurations.items(),
-                                                                          key=lambda x: len(x[1]))
+    for i in range(min(problem_definition.teams_configuration[4], len(pizzas_configurations) // 4)):
+        print(f"Team (4) {i}/{problem_definition.teams_configuration[4]}")
+        # Obtain pizza with max number of ingredients
+        pizza_max_ingredients_id, pizza_max_ingredients_ingredients \
+            = max(pizzas_configurations.items(), key=lambda x: len(x[1]))
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
-        # Obtain the pizza with min intersection member 2
-        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = max(pizzas_configurations.items(),
-                                                                              key=lambda x: union_multiplier * len(frozenset.union(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  x[1])) - intersection_multiplier * len(frozenset.intersection(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  x[1])))
+        # Obtain the pizza with max union member 2
+        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 \
+            = max(pizzas_configurations.items(), key=lambda x: union_multiplier * len(
+            frozenset.union(pizza_max_ingredients_ingredients, x[1])) - intersection_multiplier * len(
+            frozenset.intersection(pizza_max_ingredients_ingredients, x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id_1)
 
-        # Obtain the pizza with min intersection member 3
-        pizza_min_ingredients_id_2, pizza_min_ingredients_ingredients_2 = max(pizzas_configurations.items(),
-                                                                              key=lambda x: union_multiplier * len(frozenset.union(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  pizza_min_ingredients_ingredients_1,
-                                                                                  x[1]))+ intersection_multiplier* len(frozenset.intersection(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  pizza_min_ingredients_ingredients_1,
-                                                                                  x[1])))
+        # Obtain the pizza with max union member 3
+        pizza_min_ingredients_id_2, pizza_min_ingredients_ingredients_2 \
+            = max(pizzas_configurations.items(), key=lambda x: union_multiplier * len(
+            frozenset.union(pizza_max_ingredients_ingredients, pizza_min_ingredients_ingredients_1,
+                            x[1])) + intersection_multiplier * len(
+            frozenset.intersection(pizza_max_ingredients_ingredients, pizza_min_ingredients_ingredients_1, x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id_2)
 
-        # Obtain the pizza with min intersection member 4
+        # Obtain the pizza with max union member 4
         pizza_min_ingredients_id_3, _ = max(pizzas_configurations.items(),
-                                            key=lambda x: union_multiplier *  len(frozenset.union(
+                                            key=lambda x: union_multiplier * len(frozenset.union(
                                                 pizza_max_ingredients_ingredients,
                                                 pizza_min_ingredients_ingredients_1,
                                                 pizza_min_ingredients_ingredients_2,
-                                                x[1])) - intersection_multiplier* len(frozenset.intersection(
+                                                x[1])) - intersection_multiplier * len(frozenset.intersection(
                                                 pizza_max_ingredients_ingredients,
                                                 pizza_min_ingredients_ingredients_1,
                                                 pizza_min_ingredients_ingredients_2,
@@ -172,23 +226,21 @@ def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> Problem
                  pizza_min_ingredients_id_3}))
 
     # Obtain for three people
-    for i in range(problem_definition.teams_configuration[3]):
-        print(f"Team {i}/{problem_definition.teams_configuration[3]}")
-        # Obtain pizza with max ingredients
+    for i in range(min(problem_definition.teams_configuration[3], len(pizzas_configurations) // 3)):
+        print(f"Team (3) {i}/{problem_definition.teams_configuration[3]}")
+        # Obtain pizza with max number of ingredients
         pizza_max_ingredients_id, pizza_max_ingredients_ingredients = max(pizzas_configurations.items(),
                                                                           key=lambda x: len(x[1]))
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
-        # Obtain the pizza with min intersection member 2
-        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = max(pizzas_configurations.items(),
-                                                                              key=lambda x: union_multiplier * len(frozenset.union(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  x[1]))- intersection_multiplier* len(frozenset.intersection(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  x[1])))
+        # Obtain the pizza with max union member 2
+        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 \
+            = max(pizzas_configurations.items(), key=lambda x: union_multiplier * len(
+            frozenset.union(pizza_max_ingredients_ingredients, x[1])) - intersection_multiplier * len(
+            frozenset.intersection(pizza_max_ingredients_ingredients, x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id_1)
 
-        # Obtain the pizza with min intersection member 3
+        # Obtain the pizza with max union member 3
         pizza_min_ingredients_id_2, _ = max(pizzas_configurations.items(),
                                             key=lambda x: union_multiplier * len(frozenset.union(
                                                 pizza_max_ingredients_ingredients,
@@ -203,17 +255,18 @@ def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> Problem
             (3, {pizza_max_ingredients_id, pizza_min_ingredients_id_1, pizza_min_ingredients_id_2}))
 
     # Obtain for two people
-    for i in range(problem_definition.teams_configuration[2]):
-        print(f"Team {i}/{problem_definition.teams_configuration[2]}")
-        # Obtain pizza with max ingredients
+    for i in range(min(problem_definition.teams_configuration[2], len(pizzas_configurations) // 2)):
+        print(f"Team (2) {i}/{problem_definition.teams_configuration[2]}")
+        # Obtain pizza with max number of ingredients
         pizza_max_ingredients_id, pizza_max_ingredients_ingredients = max(pizzas_configurations.items(),
                                                                           key=lambda x: len(x[1]))
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
-        # Obtain the pizza with min intersection
+        # Obtain the pizza with max union
         pizza_min_ingredients_id, _ = max(pizzas_configurations.items(),
                                           key=lambda x: union_multiplier * len(
-                                              frozenset.union(pizza_max_ingredients_ingredients, x[1])) - intersection_multiplier * len(
+                                              frozenset.union(pizza_max_ingredients_ingredients,
+                                                              x[1])) - intersection_multiplier * len(
                                               frozenset.intersection(pizza_max_ingredients_ingredients, x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id)
 
@@ -243,14 +296,6 @@ def simple_algorithm(problem_definition: ProblemDefinition) -> ProblemOutput:
 
 
 if __name__ == '__main__':
-    # 9:49 -> Inicio
-    # 10:25 -> Estructura inicial
-    # 10:52 -> Input
-    # 11:14 -> Simple solution
-    # 11:25 -> Output
-    # 11:43 -> Score
-    # 11:46 -> First submission done: Break
-
     possible_inputs = {
         "a": "in/a_example.in",
         "b": "in/b_little_bit_of_everything.in",
@@ -267,12 +312,12 @@ if __name__ == '__main__':
         "e": "out/e_many_teams.out"
     }
 
-    __main_input = "c"
+    __main_input = "e"
     print("Loading input")
     __main_problem_definition = load_input(possible_inputs[__main_input])
     print("Running algorithm")
     __start_time = time.time()
-    __main_problem_output = algorithm_many_ingredients(__main_problem_definition)
+    __main_problem_output = algorithm_many_teams_union_intersection(__main_problem_definition)
     __end_time = time.time()
     print(f"\t Running time: {__end_time - __start_time}")
 
@@ -286,3 +331,5 @@ if __name__ == '__main__':
 
     else:
         print("\t Solution is invalid")
+
+    print(f"The score upper bound is {obtain_score_upper_bound(problem_definition=__main_problem_definition)}")
