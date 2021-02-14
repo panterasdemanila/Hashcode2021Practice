@@ -123,20 +123,41 @@ def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> Problem
 
     delivered_pizzas: deque[Tuple[int, Set[int]]] = deque()
 
-    # Obtain for two people
-    for i in range(problem_definition.teams_configuration[2]):
-        print(f"Team {i}/{problem_definition.teams_configuration[2]}")
+    # Obtain for four people
+    for i in range(problem_definition.teams_configuration[4]):
+        print(f"Team {i}/{problem_definition.teams_configuration[4]}")
         # Obtain pizza with max ingredients
         pizza_max_ingredients_id, pizza_max_ingredients_ingredients = max(pizzas_configurations.items(),
                                                                           key=lambda x: len(x[1]))
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
-        # Obtain the pizza with min intersection
-        pizza_min_ingredients_id, _ = min(pizzas_configurations.items(),
-                                          key=lambda x: frozenset.intersection(pizza_max_ingredients_ingredients, x[1]))
-        pizzas_configurations.pop(pizza_min_ingredients_id)
+        # Obtain the pizza with min intersection member 2
+        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = max(pizzas_configurations.items(),
+                                                                              key=lambda x: len(frozenset.union(
+                                                                                  pizza_max_ingredients_ingredients,
+                                                                                  x[1])))
+        pizzas_configurations.pop(pizza_min_ingredients_id_1)
 
-        delivered_pizzas.append((2, {pizza_max_ingredients_id, pizza_min_ingredients_id}))
+        # Obtain the pizza with min intersection member 3
+        pizza_min_ingredients_id_2, pizza_min_ingredients_ingredients_2 = max(pizzas_configurations.items(),
+                                                                              key=lambda x: len(frozenset.union(
+                                                                                  pizza_max_ingredients_ingredients,
+                                                                                  pizza_min_ingredients_ingredients_1,
+                                                                                  x[1])))
+        pizzas_configurations.pop(pizza_min_ingredients_id_2)
+
+        # Obtain the pizza with min intersection member 4
+        pizza_min_ingredients_id_3, _ = min(pizzas_configurations.items(),
+                                            key=lambda x: len(frozenset.union(
+                                                pizza_max_ingredients_ingredients,
+                                                pizza_min_ingredients_ingredients_1,
+                                                pizza_min_ingredients_ingredients_2,
+                                                x[1])))
+        pizzas_configurations.pop(pizza_min_ingredients_id_3)
+
+        delivered_pizzas.append(
+            (4, {pizza_max_ingredients_id, pizza_min_ingredients_id_1, pizza_min_ingredients_id_2,
+                 pizza_min_ingredients_id_3}))
 
     # Obtain for three people
     for i in range(problem_definition.teams_configuration[3]):
@@ -147,57 +168,38 @@ def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> Problem
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
         # Obtain the pizza with min intersection member 2
-        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = min(pizzas_configurations.items(),
-                                                                              key=lambda x: frozenset.intersection(
+        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = max(pizzas_configurations.items(),
+                                                                              key=lambda x: len(frozenset.union(
                                                                                   pizza_max_ingredients_ingredients,
-                                                                                  x[1]))
+                                                                                  x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id_1)
 
         # Obtain the pizza with min intersection member 3
-        pizza_min_ingredients_id_2, _ = min(pizzas_configurations.items(),
-                                            key=lambda x: frozenset.intersection(
+        pizza_min_ingredients_id_2, _ = max(pizzas_configurations.items(),
+                                            key=lambda x: len(frozenset.union(
                                                 pizza_max_ingredients_ingredients,
                                                 pizza_min_ingredients_ingredients_1,
-                                                x[1]))
+                                                x[1])))
         pizzas_configurations.pop(pizza_min_ingredients_id_2)
 
-        delivered_pizzas.append((3, {pizza_max_ingredients_id, pizza_min_ingredients_id_1, pizza_min_ingredients_id_2}))
+        delivered_pizzas.append(
+            (3, {pizza_max_ingredients_id, pizza_min_ingredients_id_1, pizza_min_ingredients_id_2}))
 
-    # Obtain for four people
-    for i in range(problem_definition.teams_configuration[4]):
-        print(f"Team {i}/{problem_definition.teams_configuration[4]}")
+    # Obtain for two people
+    for i in range(problem_definition.teams_configuration[2]):
+        print(f"Team {i}/{problem_definition.teams_configuration[2]}")
         # Obtain pizza with max ingredients
         pizza_max_ingredients_id, pizza_max_ingredients_ingredients = max(pizzas_configurations.items(),
                                                                           key=lambda x: len(x[1]))
         pizzas_configurations.pop(pizza_max_ingredients_id)
 
-        # Obtain the pizza with min intersection member 2
-        pizza_min_ingredients_id_1, pizza_min_ingredients_ingredients_1 = min(pizzas_configurations.items(),
-                                                                              key=lambda x: frozenset.intersection(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  x[1]))
-        pizzas_configurations.pop(pizza_min_ingredients_id_1)
+        # Obtain the pizza with min intersection
+        pizza_min_ingredients_id, _ = max(pizzas_configurations.items(),
+                                          key=lambda x: len(
+                                              frozenset.union(pizza_max_ingredients_ingredients, x[1])))
+        pizzas_configurations.pop(pizza_min_ingredients_id)
 
-        # Obtain the pizza with min intersection member 3
-        pizza_min_ingredients_id_2, pizza_min_ingredients_ingredients_2 = min(pizzas_configurations.items(),
-                                                                              key=lambda x: frozenset.intersection(
-                                                                                  pizza_max_ingredients_ingredients,
-                                                                                  pizza_min_ingredients_ingredients_1,
-                                                                                  x[1]))
-        pizzas_configurations.pop(pizza_min_ingredients_id_2)
-
-        # Obtain the pizza with min intersection member 4
-        pizza_min_ingredients_id_3, _ = min(pizzas_configurations.items(),
-                                            key=lambda x: frozenset.intersection(
-                                                pizza_max_ingredients_ingredients,
-                                                pizza_min_ingredients_ingredients_1,
-                                                pizza_min_ingredients_ingredients_2,
-                                                x[1]))
-        pizzas_configurations.pop(pizza_min_ingredients_id_3)
-
-        delivered_pizzas.append(
-            (4, {pizza_max_ingredients_id, pizza_min_ingredients_id_1, pizza_min_ingredients_id_2,
-                 pizza_min_ingredients_id_3}))
+        delivered_pizzas.append((2, {pizza_max_ingredients_id, pizza_min_ingredients_id}))
 
     return ProblemOutput(list(delivered_pizzas))
 
@@ -255,6 +257,7 @@ if __name__ == '__main__':
     __main_problem_output = algorithm_many_ingredients(__main_problem_definition)
     # Simple 204889772
     # Min intersection -> 312425603
+    # Min intersection inverse order -> 369198288
     __end_time = time.time()
     print(f"\t Running time: {__end_time - __start_time}")
 
