@@ -123,8 +123,8 @@ def algorithm_many_ingredients(problem_definition: ProblemDefinition) -> Problem
 
     delivered_pizzas: deque[Tuple[int, Set[int]]] = deque()
 
-    union_multiplier = 1
-    intersection_multiplier = 0
+    union_multiplier = 2
+    intersection_multiplier = 1
 
     # Obtain for four people
     for i in range(problem_definition.teams_configuration[4]):
